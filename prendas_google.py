@@ -1,24 +1,27 @@
 # prendas_google.py
+import streamlit as st
 import gspread
 from google.oauth2.service_account import Credentials
 
-SCOPES = [
-    "https://www.googleapis.com/auth/spreadsheets",
-    "https://www.googleapis.com/auth/drive"
-]
-SERVICE_ACCOUNT_FILE = "credenciales.json"   # asegúrate que esté en la misma carpeta
-DOC_NAME = "pedidos_y_ventas"                # nombre exacto del documento en Drive
+# Cargar credenciales desde los Secrets de Streamlit
+creds = Credentials.from_service_account_info(
+    st.secrets["google_credentials"],
+    scopes=[
+        "https://www.googleapis.com/auth/spreadsheets",
+        "https://www.googleapis.com/auth/drive"
+    ]
+)
 
-creds = Credentials.from_service_account_file(SERVICE_ACCOUNT_FILE, scopes=SCOPES)
+# Conectar con Google Sheets
 gc = gspread.authorize(creds)
-sh = gc.open(DOC_NAME)
+sh = gc.open("pedidos_y_ventas")
 
-# Obtener las hojas por nombre (asegúrate de tenerlas creadas)
+# Obtener las hojas por nombre
 pedidos_ws = sh.worksheet("Hoja 1")   # hoja para PEDIDOS
-ventas_ws  = sh.worksheet("Hoja 2")    # hoja para VENTAS
+ventas_ws  = sh.worksheet("Hoja 2")   # hoja para VENTAS
 
+# Función para guardar registro
 def guardar_registro(datos):
-    # fila con el orden exacto de las columnas del sheet
     fila = [
         datos.get("VENDEDOR",""),
         datos.get("CLIENTE",""),
@@ -36,9 +39,11 @@ def guardar_registro(datos):
         datos.get("PUNTO_ENTREGA",""),
         datos.get("TIPO","")
     ]
+
     tipo = (datos.get("TIPO","")).strip().lower()
     if tipo == "venta":
         ventas_ws.append_row(fila, value_input_option="USER_ENTERED")
     else:
         pedidos_ws.append_row(fila, value_input_option="USER_ENTERED")
+
 
