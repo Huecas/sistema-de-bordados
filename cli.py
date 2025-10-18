@@ -1,29 +1,23 @@
-# cli.py
-from prendas_google import guardar_registro
-from datetime import datetime
+from prendas_google import agregar_registro, leer_datos
 
-def input_nonempty(prompt):
-    v = input(prompt).strip()
-    return v
+SHEET_ID = "TU_ID_AQUI"
+NOMBRE_HOJA = "Hoja 1"
 
-def run():
-    print("== Nuevo registro de Bata ==")
-    datos = {}
-    datos["VENDEDOR"] = input_nonempty("VENDEDOR: ")
-    datos["CLIENTE"] = input_nonempty("NOMBRE DE CLIENTE: ")
-    datos["TELÉFONO"] = input_nonempty("NUMERO TELEFONICO: ")
-    datos["PRENDA"] = input_nonempty("PRENDA: ")
-    datos["COLOR"] = input_nonempty("COLOR (ej. Blanca, Guinda): ")
-    datos["TALLA"] = input_nonempty("TALLA (28-30-...-46): ")
-    datos["BORDADOS"] = input_nonempty("BORDADOS (ej. ESIME + ESCOM): ")
-    datos["A_CUENTA"] = input_nonempty("A CUENTA (monto): ")
-    datos["RESTAN"] = input_nonempty("RESTAN (monto): ")
-    datos["TOTAL"] = input_nonempty("TOTAL (monto): ")
-    datos["FECHA_ENTREGA"] = input_nonempty("FECHA DE ENTREGA (dd/mm/yyyy): ")
-    datos["PUNTO_ENTREGA"] = input_nonempty("PUNTO DE ENTREGA: ")
-    datos["TIPO"] = input_nonempty("TIPO (Venta / Pedido): ")
+def menu():
+    print("=== SISTEMA DE BORDADOS CLI ===")
+    print("1. Ver prendas")
+    print("2. Agregar prenda")
+    opcion = input("Selecciona una opción: ")
 
-    guardar_registro(datos)
+    if opcion == "1":
+        df = leer_datos(SHEET_ID, NOMBRE_HOJA)
+        print(df)
+    elif opcion == "2":
+        nombre = input("Nombre del cliente: ")
+        tipo = input("Tipo de prenda: ")
+        color = input("Color: ")
+        fecha = input("Fecha (AAAA-MM-DD): ")
+        agregar_registro(SHEET_ID, NOMBRE_HOJA, [nombre, tipo, color, fecha])
 
 if __name__ == "__main__":
-    run()
+    menu()
