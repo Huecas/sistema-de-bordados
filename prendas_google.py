@@ -1,6 +1,7 @@
 import gspread
-from google.oauth2.service_account import Credentials
 import streamlit as st
+import json
+from google.oauth2.service_account import Credentials
 
 # Alcances (permisos) de Google Sheets y Drive
 SCOPES = [
@@ -8,37 +9,38 @@ SCOPES = [
     "https://www.googleapis.com/auth/drive"
 ]
 
-# Cargar credenciales desde archivo JSON local
+# Inicializamos las variables globales
+client = None
+spreadsheet = None
+
+# --- CONEXIÓN SEGURA A GOOGLE SHEETS ---
 try:
-    credentials = Credentials.from_service_account_file("credenciales.json", scopes=SCOPES)
+    credenciales_dict = json.loads(st.secrets["general"]["google_service_account"])
+    credentials = Credentials.from_service_account_info(credenciales_dict, scopes=SCOPES)
     client = gspread.authorize(credentials)
-    st.write("✅ Conectado correctamente a Google Sheets")
-except Exception as e:
-    st.error(f"❌ Error al conectar con Google Sheets: {e}")
-
-# Abre el archivo de Google Sheets
-try:
     spreadsheet = client.open("Sistema_Bordados")
+    st.write("✅ Conectado correctamente a Google Sheets (modo seguro)")
 except Exception as e:
-    st.error(f"❌ Error al abrir el archivo de Google Sheets: {e}")
+    st.error(f"❌ Error al conectar o abrir Google Sheets: {e}")
 
+# --- FUNCIÓN PARA GUARDAR REGISTRO ---
 def guardar_registro(data: dict):
+    if spreadsheet is None:
+        st.error("❌ No se ha podido conectar con Google Sheets. Revisa las credenciales o los secrets.")
+        return False
+
     try:
-        # Determinar hoja según vendedor y tipo
         vendedor = data.get("vendedor", "").strip()
         tipo = data.get("tipo", "").strip().capitalize()  # "Venta" o "Pedidos"
 
         if not vendedor or not tipo:
             raise ValueError("Falta el nombre del vendedor o el tipo (Venta/Pedidos).")
 
-        hoja = f"{vendedor}_{tipo}"  # Ejemplo: Jabe_Pedidos, Danilo_Ventas, etc.
-
+        hoja = f"{vendedor}_{tipo}"  # Ejemplo: Jabe_Pedidos
         st.write(f"Guardando en hoja: {hoja}")
 
-        # Abre la hoja correspondiente
         sheet = spreadsheet.worksheet(hoja)
 
-        # Datos a guardar
         valores = [
             vendedor,
             data.get("nombre_cliente", ""),
@@ -56,7 +58,7 @@ def guardar_registro(data: dict):
             tipo
         ]
 
-        # ✅ Corrección: se inserta siempre desde la columna A
+        # Buscar la siguiente fila vacía
         next_row = len(sheet.get_all_values()) + 1
         sheet.update(f"A{next_row}:N{next_row}", [valores])
 
@@ -66,8 +68,9 @@ def guardar_registro(data: dict):
     except gspread.exceptions.WorksheetNotFound:
         st.error(f"❌ La hoja '{hoja}' no existe en el archivo de Google Sheets.")
         return False
-
     except Exception as e:
         st.error(f"❌ Error al guardar: {e}")
         return False
+
+
 
